@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import random
+import re
 import shutil
 from collections import Counter
 from pathlib import Path
@@ -90,6 +91,44 @@ def remap_lines(lines, src_names, class_map, out_classes):
     return out
 
 
+def source_group(path: Path, dataset_idx: int = 0) -> str:
+    """Images that come from the same original must land in the same split, or the test score is inflated.
+
+    * Roboflow augmented copies:  img_12_jpg.rf.<hash>.jpg     -> img_12_jpg
+    * frames cut from one video:  fire2_mp4-17_jpg.rf.<hash>   -> fire2_mp4
+    * one collect_frames session:  candle_lab_1791609151968     -> candle_lab
+    """
+    stem = path.stem.split(".rf.")[0]
+    stem = re.sub(r"_(mp4|avi|mov|mkv|webm)-\d+.*$", r"_\1", stem, flags=re.IGNORECASE)
+    stem = re.sub(r"_\d{12,}$", "", stem)   # frames saved by collect_frames.py: <session>_<milliseconds>
+    return f"{dataset_idx}:{stem}"
+
+
+def split_items(items, fractions, seed, by_group=True):
+    """Shuffle and split items (img, lines, group) into train/val/test, keeping each group together."""
+    rng = random.Random(seed)
+    if not by_group:
+        items = items[:]
+        rng.shuffle(items)
+        n = len(items)
+        a, b = int(n * fractions[0]), int(n * (fractions[0] + fractions[1]))
+        return {"train": items[:a], "val": items[a:b], "test": items[b:]}
+    groups: dict[str, list] = {}
+    for it in items:
+        groups.setdefault(it[2], []).append(it)
+    keys = sorted(groups)
+    rng.shuffle(keys)
+    total = len(items)
+    targets = {"val": fractions[1] * total, "test": fractions[2] * total}
+    out = {"train": [], "val": [], "test": []}
+    for k in keys:
+        # fill val and test first (up to their target size), everything else goes to train
+        dest = next((name for name in ("test", "val") if len(out[name]) + len(groups[k]) <= targets[name] * 1.1
+                     and len(out[name]) < targets[name]), "train")
+        out[dest].extend(groups[k])
+    return out
+
+
 def file_hash(path: Path) -> str:
     return hashlib.md5(path.read_bytes()).hexdigest()
 
@@ -102,6 +141,8 @@ def main(argv=None):
     p.add_argument("--class-map", nargs="*", default=[], help='rename source classes, e.g. "Fire=fire" "flame=fire"')
     p.add_argument("--split", nargs=3, type=float, default=[0.7, 0.2, 0.1], metavar=("TRAIN", "VAL", "TEST"))
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument("--no-group-split", action="store_true",
+                   help="split image by image (NOT recommended: video frames leak between train and test)")
     args = p.parse_args(argv)
 
     class_map = dict(item.split("=", 1) for item in args.class_map)
@@ -110,7 +151,7 @@ def main(argv=None):
         shutil.rmtree(out)
 
     items, seen, stats = [], set(), Counter()
-    for folder in map(Path, args.inputs):
+    for dataset_idx, folder in enumerate(map(Path, args.inputs)):
         src_names = read_source_names(folder)
         for img, label in find_pairs(folder):
             h = file_hash(img)
@@ -125,18 +166,16 @@ def main(argv=None):
                 print(f"skip {img}: {problems[0]}")
                 continue
             lines = remap_lines(lines, src_names, class_map, args.classes)
-            items.append((img, lines))
+            items.append((img, lines, source_group(img, dataset_idx)))
 
-    random.Random(args.seed).shuffle(items)
     n = len(items)
-    n_train, n_val = int(n * args.split[0]), int(n * args.split[1])
-    splits = {"train": items[:n_train], "val": items[n_train:n_train + n_val], "test": items[n_train + n_val:]}
+    splits = split_items(items, args.split, args.seed, by_group=not args.no_group_split)
 
     box_counts = Counter()
     for split, rows in splits.items():
         (out / "images" / split).mkdir(parents=True, exist_ok=True)
         (out / "labels" / split).mkdir(parents=True, exist_ok=True)
-        for idx, (img, lines) in enumerate(rows):
+        for idx, (img, lines, _group) in enumerate(rows):
             stem = f"{split}_{idx:06d}"
             shutil.copy2(img, out / "images" / split / f"{stem}{img.suffix.lower()}")
             (out / "labels" / split / f"{stem}.txt").write_text("\n".join(lines) + ("\n" if lines else ""))

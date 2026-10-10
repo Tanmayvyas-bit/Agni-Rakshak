@@ -3,6 +3,7 @@ data/
 datasets/
 runs/
 model/weights/*.pt
+!model/weights/best.pt
 model/weights/*_ncnn_model/
 model/weights/*.onnx
 outputs/
