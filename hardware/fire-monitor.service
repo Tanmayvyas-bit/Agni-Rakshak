@@ -1,0 +1,17 @@
+# Start the fire monitor automatically at boot (month 4-5).
+#   sudo cp hardware/fire-monitor.service /etc/systemd/system/
+#   sudo systemctl enable --now fire-monitor
+[Unit]
+Description=Smart Fire Detection monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/smart-fire-detection
+ExecStart=/home/pi/smart-fire-detection/.venv/bin/python -m hardware.pi_fire_monitor
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

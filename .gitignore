@@ -1,0 +1,13 @@
+# datasets and training runs are large; share them via Google Drive instead of git
+data/
+datasets/
+runs/
+model/weights/*.pt
+model/weights/*_ncnn_model/
+model/weights/*.onnx
+outputs/
+dashboard/fire_dashboard.db
+dashboard/static/snapshots/
+*.pyc
+__pycache__/
+.venv/

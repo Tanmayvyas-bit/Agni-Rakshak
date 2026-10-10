@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Fire Detection</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Chart.js 4.4.1 (MIT) bundled locally so the dashboard works without internet in the lab -->
+  <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="logo">🔥</span> Smart Fire Detection <small>Final Year Project</small></div>
+  <div class="top-right">
+    <label class="toggle"><input type="checkbox" id="soundToggle"> Alarm sound</label>
+    <span id="clock" class="muted"></span>
+    <span id="statusPill" class="pill pill-SAFE">SAFE</span>
+  </div>
+</header>
+
+<section id="banner" class="banner banner-SAFE">
+  <div>
+    <strong id="bannerTitle">All clear</strong>
+    <span id="bannerText">No fire or smoke detected.</span>
+  </div>
+  <button id="ackAll" class="btn btn-light" hidden>Acknowledge all</button>
+</section>
+
+<main class="container">
+  <section class="tiles">
+    <div class="tile"><span class="tile-label">Risk score</span><span class="tile-value" id="tScore">0</span>
+      <div class="meter"><div id="scoreBar"></div></div></div>
+    <div class="tile"><span class="tile-label">Temperature</span><span class="tile-value" id="tTemp">--</span><span class="tile-sub">°C (DHT22)</span></div>
+    <div class="tile"><span class="tile-label">Smoke level</span><span class="tile-value" id="tSmoke">--</span><span class="tile-sub">% above clean air (MQ-2)</span></div>
+    <div class="tile"><span class="tile-label">Humidity</span><span class="tile-value" id="tHum">--</span><span class="tile-sub">% RH</span></div>
+    <div class="tile"><span class="tile-label">Alerts today</span><span class="tile-value" id="tAlerts">0</span><span class="tile-sub" id="tAlertsSub">0 fire · 0 warning</span></div>
+    <div class="tile"><span class="tile-label">Devices online</span><span class="tile-value" id="tDevices">0</span><span class="tile-sub" id="tDevicesSub">of 0</span></div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <div class="card-head">
+        <h2>Live camera</h2>
+        <div class="row">
+          <select id="feedSelect"><option value="__local">This laptop's webcam</option></select>
+          <button id="camBtn" class="btn">Start camera</button>
+        </div>
+      </div>
+      <div class="video-wrap">
+        <img id="video" alt="camera feed" hidden>
+        <div id="videoPlaceholder" class="placeholder">Camera is off. Click <b>Start camera</b> to run YOLOv8 on the laptop webcam, or pick a device that is sending frames.</div>
+      </div>
+      <div class="muted small" id="camInfo"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Sensor trend (last 30 min)</h2>
+        <select id="chartDevice"><option value="">All devices</option></select></div>
+      <div class="chart-wrap"><canvas id="sensorChart"></canvas></div>
+      <p class="muted small" id="chartNote"></p>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Alert history</h2><a class="btn btn-ghost" href="/api/events.csv">Export CSV</a></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>Device</th><th>Level</th><th>Detected</th><th>Confidence</th><th>Temp / Smoke</th><th>Snapshot</th><th></th></tr></thead>
+        <tbody id="eventsBody"><tr><td colspan="8" class="muted">No alerts yet.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h2>Devices</h2></div>
+    <div id="devices" class="devices"><p class="muted">No device has connected yet. Start <code>detection/webcam_detect.py</code>, the GUI or the Raspberry Pi monitor.</p></div>
+  </section>
+</main>
+
+<div id="lightbox" class="lightbox" hidden><img alt="snapshot"></div>
+<footer class="muted small">Tanishka Yadav · Tanishk Khandelwal · Tanmay Vyas · Shubham Aggarwal</footer>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# Raspberry Pi 4 (Raspberry Pi OS Bookworm 64-bit). picamera2 and gpiozero come from apt (see setup_pi.sh).
+ultralytics>=8.1
+ncnn
+opencv-python-headless>=4.8
+numpy>=1.24
+pyyaml>=6.0
+adafruit-circuitpython-dht
+adafruit-circuitpython-ads1x15
+adafruit-blinka
+lgpio

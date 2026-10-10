@@ -1,0 +1,47 @@
+# Smart Fire Detection System - shared configuration
+# Every script reads this file. Command-line flags override these values.
+
+model:
+  weights: model/weights/best.pt      # produced by model/train.py (Tanishka)
+  pi_weights: model/weights/best_ncnn_model   # produced by model/export.py, used on the Raspberry Pi
+  conf: 0.45            # minimum confidence for a detection to be shown
+  iou: 0.50             # NMS IoU threshold
+  imgsz: 640            # inference size on laptop (use 320 on the Pi)
+  classes: [fire, smoke]
+  allow_demo_detector: true   # if no trained weights exist, use the colour-based demo detector
+
+camera:
+  source: 0             # 0 = built-in laptop webcam; can also be a video file path or RTSP URL
+  width: 1280
+  height: 720
+
+alerts:
+  min_consecutive_frames: 5   # fire must be seen in N frames in a row before alarming (kills flicker)
+  cooldown_seconds: 30        # don't raise the same alarm again within this window
+  sound: true
+  snapshot_dir: outputs/snapshots
+
+dashboard:
+  host: 0.0.0.0
+  port: 5000
+  url: http://127.0.0.1:5000  # where detectors / the Pi send their data
+  api_key: change-me-fire-2026  # devices must send this in the X-API-Key header
+  database: dashboard/fire_dashboard.db
+
+sensors:                       # Raspberry Pi (Tanmay)
+  dht_pin: 4                   # GPIO4  (physical pin 7)
+  mq2_digital_pin: 17          # GPIO17 (physical pin 11)
+  buzzer_pin: 27               # GPIO27 (physical pin 13)
+  red_led_pin: 22              # GPIO22 (physical pin 15)
+  green_led_pin: 23            # GPIO23 (physical pin 16)
+  ads1115_address: 0x48
+  mq2_channel: 0               # ADS1115 A0
+  mq2_divider_ratio: 1.5       # 10k/20k divider on MQ-2 AO: real volts = measured * 1.5
+  read_interval_seconds: 2
+
+fusion:                        # how camera + sensors are combined into one risk level
+  temp_warn_c: 45
+  temp_alarm_c: 57
+  smoke_warn_pct: 25           # smoke level above clean-air baseline, 0-100 %
+  smoke_alarm_pct: 50
+  vision_alarm_conf: 0.60

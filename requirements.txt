@@ -1,0 +1,9 @@
+# Laptop / development machine (Windows, macOS or Linux)
+ultralytics>=8.1          # YOLOv8 (pulls in torch + opencv)
+opencv-python>=4.8
+numpy>=1.24
+pyyaml>=6.0
+flask>=3.0
+pillow>=10.0              # desktop GUI image handling
+requests>=2.31
+pytest>=8.0

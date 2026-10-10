@@ -1,0 +1,8 @@
+# Template. model/prepare_dataset.py writes the real one to datasets/fire/data.yaml.
+path: ../datasets/fire
+train: images/train
+val: images/val
+test: images/test
+names:
+  0: fire
+  1: smoke
